@@ -1,8 +1,9 @@
 use super::Vec4;
+use std::fmt::Debug;
 use std::simd::{f32x4, Which};
 use std::{ops::*, simd::simd_swizzle};
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub struct Mat4 {
     pub x: Vec4,
     pub y: Vec4,
@@ -120,11 +121,11 @@ impl Mat4 {
         }
 
         let tmp0 = unpacklo(self.x.into_inner(), self.y.into_inner());
-        let tmp1 = unpacklo(self.z.into_inner(), self.w.into_inner());
-        let tmp2 = unpackhi(self.x.into_inner(), self.y.into_inner());
+        let tmp2 = unpacklo(self.z.into_inner(), self.w.into_inner());
+        let tmp1 = unpackhi(self.x.into_inner(), self.y.into_inner());
         let tmp3 = unpackhi(self.z.into_inner(), self.w.into_inner());
 
-        self.x = Vec4::from_simd(movelh(tmp0, tmp1));
+        self.x = Vec4::from_simd(movelh(tmp0, tmp2));
         self.y = Vec4::from_simd(movehl(tmp2, tmp0));
         self.z = Vec4::from_simd(movelh(tmp1, tmp3));
         self.w = Vec4::from_simd(movehl(tmp3, tmp1));
@@ -165,12 +166,14 @@ impl Mul for Mat4 {
     #[inline]
     fn mul(self, mut rhs: Self) -> Self::Output {
         rhs.transpose_assign();
-        return Self::from_rows(
+        let mut result = Self::from_rows(
             self * rhs.x,
             self * rhs.y,
             self * rhs.z,
             self * rhs.w
-        )
+        );
+        result.transpose_assign();
+        return result
     }
 }
 
@@ -241,5 +244,56 @@ impl Div<Mat4> for f32 {
             z: self / rhs.z,
             w: self / rhs.w,
         }
+    }
+}
+
+impl Debug for Mat4 {
+    #[inline]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_list()
+            .entry(&self.x)
+            .entry(&self.y)
+            .entry(&self.z)
+            .entry(&self.w)
+            .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::math::Vec4;
+    use super::Mat4;
+
+    const VEC: Vec4 = Vec4::new(1., 5., 2., 6.);
+    const LHS: Mat4 = Mat4::from_array([
+        [1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0],
+        [9.0, 10., 11., 12.],
+        [13., 14., 15., 16.]
+    ]);
+
+    #[test]
+    fn transpose () {
+        assert_eq!(LHS.transpose(), Mat4::from_array([
+            [1., 5., 9., 13.],
+            [2., 6., 10., 14.],
+            [3., 7., 11., 15.],
+            [4., 8., 12., 16.]
+        ]));
+    }
+
+    #[test]
+    fn mul_vec () {
+        assert_eq!(LHS * VEC, Vec4::new(41., 97., 153., 209.));
+    }
+
+    #[test]
+    fn mul_mat () {
+        assert_eq!(LHS * LHS, 2. * Mat4::from_array([
+            [45., 50., 55., 60.],
+            [101., 114., 127., 104.],
+            [157., 178., 199., 220.],
+            [213., 242., 271., 300.]
+        ]));
     }
 }

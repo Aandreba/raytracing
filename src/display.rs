@@ -2,7 +2,6 @@ use crate::math::{Mat4, Vec3, Vec4};
 use bracket_color::prelude::HSV;
 use crossterm::style::Print;
 use crossterm::{terminal, QueueableCommand, cursor};
-use rayon::iter::IntoParallelIterator;
 use rayon::{
     prelude::{IndexedParallelIterator, ParallelIterator},
     slice::ParallelSliceMut,
@@ -81,7 +80,7 @@ impl Framebuffer {
         init: I,
         f: F,
     ) where
-        T: Send + Sync,
+        T: Sync,
         F: Send + Sync,
     {
         self.update_pixel_value(init, move |x, t| f(x, t).map(pixel_value))
@@ -93,11 +92,11 @@ impl Framebuffer {
         init: I,
         f: F,
     ) where
-        T: Send + Sync,
+        T: Sync,
         F: Send + Sync,
     {
         let transform = self.camera.transform(self.aspect_ratio);
-        let t = init(transform);
+        let t = &init(transform);
 
         unsafe {
             self.pixels
@@ -105,7 +104,6 @@ impl Framebuffer {
                 .par_chunks_exact_mut(self.width as usize)
                 .enumerate()
                 .for_each(|(i, row)| {
-                    let t = &t;
                     row.get_unchecked_mut(..)
                         .into_iter()
                         .enumerate()

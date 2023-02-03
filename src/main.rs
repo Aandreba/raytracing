@@ -35,7 +35,7 @@ fn main() -> anyhow::Result<()> {
     const BUDGET: Duration = Duration::from_secs_f64(1.0 / 24.0);
 
     let frame = Framebuffer::new(None, Camera::default()); // [120, 50]
-    let sphere = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 5.0);
+    let sphere = Sphere::new(Vec3::new(0.0, 0.0, -2.0), 1.0);
     let mut renderer = Renderer::new(frame, vec![Element::new_unzise(&sphere, RGB::from_f32(1.0, 0.0, 0.0))]);
 
     loop {

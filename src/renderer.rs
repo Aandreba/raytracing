@@ -3,7 +3,7 @@ use bracket_color::rgb::RGB;
 use crate::{
     display::Framebuffer,
     element::{Element, ReflectInfo},
-    math::Vec3,
+    math::{Vec3, Vec2},
     object::{Object, Ray},
 };
 
@@ -23,7 +23,7 @@ impl<'a> Renderer<'a> {
             self.frame.update(core::convert::identity, |pos, _| {
                 let mut prev_info = ReflectInfo {
                     color: Vec3::splat(1.0),
-                    ray: Ray::new(Vec3::ZERO, pos.unit()),
+                    ray: Ray::new(Vec3::ZERO, Vec3::from_vec2(Vec2::from(pos).unit(), 1.0)),
                 };
 
                 for i in 0..depth {

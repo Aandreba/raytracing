@@ -1,13 +1,13 @@
 use std::{
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-    simd::{f32x4, mask32x4, simd_swizzle, SimdFloat, Which},
+    simd::{f32x4, mask32x4, simd_swizzle, SimdFloat, Which}, fmt::Debug,
 };
 
 use super::{Vec2, Vec3};
 
 pub type Mask4 = mask32x4;
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 #[repr(transparent)]
 pub struct Vec4(f32x4);
 
@@ -326,5 +326,12 @@ impl Neg for Vec4 {
     #[inline]
     fn neg(self) -> Self::Output {
         Self(-self.0)
+    }
+}
+
+impl Debug for Vec4 {
+    #[inline]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
     }
 }

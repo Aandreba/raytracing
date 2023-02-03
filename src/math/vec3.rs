@@ -1,4 +1,5 @@
 use super::{Vec2, Vec4};
+use std::fmt::Debug;
 use std::simd::{Which, f32x2};
 use std::{
     ops::{
@@ -8,11 +9,11 @@ use std::{
     simd::{f32x4, i32x4, mask32x4, simd_swizzle, SimdFloat},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 #[repr(transparent)]
 pub struct Mask3(mask32x4);
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 #[repr(transparent)]
 pub struct Vec3(f32x4);
 
@@ -453,5 +454,12 @@ impl From<Vec4> for Vec3 {
     #[inline]
     fn from(value: Vec4) -> Self {
         Self::from_simd(value.into_inner())
+    }
+}
+
+impl Debug for Vec3 {
+    #[inline]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.as_array(), f)
     }
 }

@@ -1,10 +1,9 @@
-use std::{simd::{SimdFloat, f32x2, mask32x2, simd_swizzle}, ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg}};
-
+use std::{simd::{SimdFloat, f32x2, mask32x2, simd_swizzle}, ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg}, fmt::Debug};
 use super::{Vec3, Vec4};
 
 pub type Mask2 = mask32x2;
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 #[repr(transparent)]
 pub struct Vec2 (f32x2);
 
@@ -270,5 +269,12 @@ impl From<Vec4> for Vec2 {
     #[inline]
     fn from(value: Vec4) -> Self {
         Self::from_simd(simd_swizzle!(value.into_inner(), [0, 1]))
+    }
+}
+
+impl Debug for Vec2 {
+    #[inline]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
     }
 }

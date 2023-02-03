@@ -26,14 +26,28 @@ impl Object for Sphere {
         let alpha = -alpha;
         let beta = f32::sqrt(delta);
 
-        let time = f32::min(alpha + beta, alpha - beta);
-        return match time.partial_cmp(&0.0) {
-            Some(Ordering::Greater | Ordering::Equal) => Some(HitInfo {
-                position: ray.origin + ray.direction * time,
-                time,
-            }),
-            _ => None,
+        let time = match alpha.partial_cmp(&beta)? {
+            Ordering::Equal => 0.0,
+            Ordering::Greater => alpha - beta,
+            _ => match alpha + beta {
+                x if x < 0.0 => return None,
+                x => x
+            },
         };
+
+        return Some(HitInfo {
+            position: ray.origin + ray.direction * time,
+            time,
+        })
+
+        // let time = f32::min(alpha + beta, alpha - beta);
+        // return match time.partial_cmp(&0.0) {
+        //     Some(Ordering::Greater | Ordering::Equal) => Some(HitInfo {
+        //         position: ray.origin + ray.direction * time,
+        //         time,
+        //     }),
+        //     _ => None,
+        // };
     }
 }
 
@@ -44,5 +58,7 @@ fn test_sphere_hit() {
     let sphere = Sphere::new(center, 1.0);
     let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0));
     let hit = sphere.is_hit_by(ray);
+
+    println!("{hit:?}");
     assert_eq!(hit.unwrap().time, 4.0);
 }
