@@ -43,7 +43,7 @@ impl Camera {
         return Mat4::from_array([
             [yy / aspect_ratio, 0.0, 0.0, 0.0],
             [0.0, yy, 0.0, 0.0],
-            [0.0, 0.0, -zp / zm, -2.0 * self.z_far * self.z_near / zm],
+            [0.0, 0.0, -zp / zm, (-2.0 * self.z_far * self.z_near) / zm],
             [0.0, 0.0, -1.0, 0.0],
         ]);
     }
@@ -53,8 +53,7 @@ impl Framebuffer {
     #[inline]
     pub fn new(size: Option<[u16; 2]>, camera: Camera) -> Self {
         let [width, height] = size.unwrap_or_else(|| command_prompt_size().unwrap_or_default());
-        let [prompt_width, prompt_height] = command_prompt_size().unwrap_or([width, height]);
-        let aspect_ratio = (prompt_width as f32) / (prompt_height as f32);
+        let aspect_ratio = (width as f32) / (height as f32);
 
         return Self {
             pixels: vec![ASCII_MAP[0]; (width as usize) * (height as usize)].into_boxed_slice(),

@@ -1,9 +1,9 @@
-use std::{
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-    simd::{f32x4, mask32x4, simd_swizzle, SimdFloat, Which}, fmt::Debug,
-};
-
 use super::{Vec2, Vec3};
+use std::{
+    fmt::Debug,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    simd::{f32x4, mask32x4, simd_swizzle, SimdFloat, Which},
+};
 
 pub type Mask4 = mask32x4;
 
@@ -147,22 +147,32 @@ impl Vec4 {
     }
 
     #[inline]
-    pub fn set_x (&mut self, v: f32) {
+    pub fn z(&self) -> f32 {
+        return self.0[2];
+    }
+
+    #[inline]
+    pub fn w(&self) -> f32 {
+        return self.0[3];
+    }
+
+    #[inline]
+    pub fn set_x(&mut self, v: f32) {
         self.0[0] = v
     }
 
     #[inline]
-    pub fn set_y (&mut self, v: f32) {
+    pub fn set_y(&mut self, v: f32) {
         self.0[1] = v
     }
 
     #[inline]
-    pub fn set_z (&mut self, v: f32) {
+    pub fn set_z(&mut self, v: f32) {
         self.0[2] = v
     }
 
     #[inline]
-    pub fn set_w (&mut self, v: f32) {
+    pub fn set_w(&mut self, v: f32) {
         self.0[3] = v
     }
 
@@ -174,6 +184,23 @@ impl Vec4 {
     #[inline]
     pub fn into_array(self) -> [f32; 4] {
         *self.as_array()
+    }
+
+    #[inline]
+    pub fn swizzle<const X: usize, const Y: usize, const Z: usize, const W: usize>(self) -> Self {
+        use std::simd::Swizzle;
+        struct Impl<const X: usize, const Y: usize, const Z: usize, const W: usize>;
+        impl<
+                const LANES: usize,
+                const X: usize,
+                const Y: usize,
+                const Z: usize,
+                const W: usize,
+            > Swizzle<LANES, 4> for Impl<X, Y, Z, W>
+        {
+            const INDEX: [usize; 4] = [X, Y, Z, W];
+        }
+        Self(Impl::<X, Y, Z, W>::swizzle(self.0))
     }
 }
 

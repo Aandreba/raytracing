@@ -5,16 +5,18 @@
     duration_consts_float,
     exit_status_error
 )]
+use crate::{
+    display::{Camera, Framebuffer, Position},
+    element::Element,
+    math::Vec3,
+    object::sphere::Sphere,
+    renderer::Renderer,
+};
+use bracket_color::rgb::RGB;
 use std::{
     cell::UnsafeCell,
     time::{Duration, Instant},
 };
-use crate::{
-    display::{Camera, Framebuffer, Position},
-    math::Vec3,
-    renderer::Renderer, object::sphere::Sphere, element::Element,
-};
-use bracket_color::rgb::RGB;
 
 macro_rules! flat_mod {
     ($($i:ident),+) => {
@@ -34,9 +36,12 @@ pub mod renderer;
 fn main() -> anyhow::Result<()> {
     const BUDGET: Duration = Duration::from_secs_f64(1.0 / 24.0);
 
-    let frame = Framebuffer::new(None, Camera::default()); // [120, 50]
-    let sphere = Sphere::new(Vec3::new(0.0, 0.0, -2.0), 1.0);
-    let mut renderer = Renderer::new(frame, vec![Element::new_unzise(&sphere, RGB::from_f32(1.0, 0.0, 0.0))]);
+    let frame = Framebuffer::new(Some([50, 50]), Camera::default()); // [120, 50]
+    let mut renderer = Renderer::new(frame, Vec::new());
+    let sphere = renderer.push(Element::new_unzise(
+        Sphere::new(Vec3::new(0.0, 0.0, -2.0), 1.0),
+        RGB::from_f32(1.0, 0.0, 0.0),
+    ));
 
     loop {
         let start = Instant::now();

@@ -15,13 +15,18 @@ impl Mat4 {
     pub const IDENTITY: Mat4 = Mat4::from_diagonal_splat(1.0);
 
     #[inline]
-    pub const fn from_rows (x: Vec4, y: Vec4, z: Vec4, w: Vec4) -> Self {
-        return Self {
-            x,
-            y,
-            z,
-            w,
-        }
+    pub const fn from_rows(x: Vec4, y: Vec4, z: Vec4, w: Vec4) -> Self {
+        return Self { x, y, z, w };
+    }
+
+    #[inline]
+    pub const fn from_simd_rows(x: f32x4, y: f32x4, z: f32x4, w: f32x4) -> Self {
+        Self::from_rows(
+            Vec4::from_simd(x),
+            Vec4::from_simd(y),
+            Vec4::from_simd(z),
+            Vec4::from_simd(w),
+        )
     }
 
     #[inline]
@@ -166,14 +171,9 @@ impl Mul for Mat4 {
     #[inline]
     fn mul(self, mut rhs: Self) -> Self::Output {
         rhs.transpose_assign();
-        let mut result = Self::from_rows(
-            self * rhs.x,
-            self * rhs.y,
-            self * rhs.z,
-            self * rhs.w
-        );
+        let mut result = Self::from_rows(self * rhs.x, self * rhs.y, self * rhs.z, self * rhs.w);
         result.transpose_assign();
-        return result
+        return result;
     }
 }
 
@@ -186,8 +186,8 @@ impl Mul<Vec4> for Mat4 {
             self.x.dot(rhs),
             self.y.dot(rhs),
             self.z.dot(rhs),
-            self.w.dot(rhs)
-        ])
+            self.w.dot(rhs),
+        ]);
     }
 }
 
@@ -215,7 +215,7 @@ impl Mul<Mat4> for f32 {
             y: self * rhs.y,
             z: self * rhs.z,
             w: self * rhs.w,
-        }
+        };
     }
 }
 
@@ -243,7 +243,7 @@ impl Div<Mat4> for f32 {
             y: self / rhs.y,
             z: self / rhs.z,
             w: self / rhs.w,
-        }
+        };
     }
 }
 
@@ -261,39 +261,45 @@ impl Debug for Mat4 {
 
 #[cfg(test)]
 mod tests {
-    use crate::math::Vec4;
     use super::Mat4;
+    use crate::math::Vec4;
 
     const VEC: Vec4 = Vec4::new(1., 5., 2., 6.);
     const LHS: Mat4 = Mat4::from_array([
         [1.0, 2.0, 3.0, 4.0],
         [5.0, 6.0, 7.0, 8.0],
         [9.0, 10., 11., 12.],
-        [13., 14., 15., 16.]
+        [13., 14., 15., 16.],
     ]);
 
     #[test]
-    fn transpose () {
-        assert_eq!(LHS.transpose(), Mat4::from_array([
-            [1., 5., 9., 13.],
-            [2., 6., 10., 14.],
-            [3., 7., 11., 15.],
-            [4., 8., 12., 16.]
-        ]));
+    fn transpose() {
+        assert_eq!(
+            LHS.transpose(),
+            Mat4::from_array([
+                [1., 5., 9., 13.],
+                [2., 6., 10., 14.],
+                [3., 7., 11., 15.],
+                [4., 8., 12., 16.]
+            ])
+        );
     }
 
     #[test]
-    fn mul_vec () {
+    fn mul_vec() {
         assert_eq!(LHS * VEC, Vec4::new(41., 97., 153., 209.));
     }
 
     #[test]
-    fn mul_mat () {
-        assert_eq!(LHS * LHS, 2. * Mat4::from_array([
-            [45., 50., 55., 60.],
-            [101., 114., 127., 104.],
-            [157., 178., 199., 220.],
-            [213., 242., 271., 300.]
-        ]));
+    fn mul_mat() {
+        assert_eq!(
+            LHS * LHS,
+            2. * Mat4::from_array([
+                [45., 50., 55., 60.],
+                [101., 114., 127., 104.],
+                [157., 178., 199., 220.],
+                [213., 242., 271., 300.]
+            ])
+        );
     }
 }
