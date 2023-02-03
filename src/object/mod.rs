@@ -1,5 +1,5 @@
+use crate::math::Vec3;
 pub mod sphere;
-use crate::vec3::Vec3;
 
 pub trait Object {
     fn is_hit_by(&self, ray: Ray) -> Option<HitRecord>;
@@ -36,7 +36,7 @@ impl Ray {
 
 #[cfg(test)]
 mod tests {
-    use crate::{vec3::Vec3, object::{sphere::Sphere, Ray, Object}};
+    use crate::{object::{sphere::Sphere, Ray, Object}, math::Vec3};
 
     #[test]
     fn test_sphere_hit() {

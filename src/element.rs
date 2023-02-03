@@ -1,7 +1,6 @@
 use bracket_color::{rgb::RGB};
 use crate::object::Object;
 
-#[repr(C)]
 pub struct Element<T> {
     pub material: Material,
     pub object: T,

@@ -1,5 +1,5 @@
 use std::{hint::unreachable_unchecked, cmp::Ordering};
-use crate::vec3::Vec3;
+use crate::math::Vec3;
 use super::{Object, Ray, HitRecord};
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]

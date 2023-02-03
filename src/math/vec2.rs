@@ -1,4 +1,6 @@
-use std::{simd::{SimdFloat, f32x2, mask32x2}, ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg}};
+use std::{simd::{SimdFloat, f32x2, mask32x2, simd_swizzle}, ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg}};
+
+use super::{Vec3, Vec4};
 
 pub type Mask2 = mask32x2;
 
@@ -22,6 +24,16 @@ impl Vec2 {
     #[inline]
     pub const fn splat_const (v: f32) -> Self {
         return Self::new(v, v)
+    }
+
+    #[inline]
+    pub const fn from_simd (v: f32x2) -> Self {
+        return Self(v)
+    }
+
+    #[inline]
+    pub const fn into_inner (self) -> f32x2 {
+        self.0
     }
 
     #[inline]
@@ -234,5 +246,19 @@ impl Neg for Vec2 {
     #[inline]
     fn neg(self) -> Self::Output {
         Self(-self.0)
+    }
+}
+
+impl From<Vec3> for Vec2 {
+    #[inline]
+    fn from(value: Vec3) -> Self {
+        Self::from_simd(simd_swizzle!(value.into_inner(), [0, 1]))
+    }
+}
+
+impl From<Vec4> for Vec2 {
+    #[inline]
+    fn from(value: Vec4) -> Self {
+        Self::from_simd(simd_swizzle!(value.into_inner(), [0, 1]))
     }
 }

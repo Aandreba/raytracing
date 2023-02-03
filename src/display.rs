@@ -1,5 +1,5 @@
+use crate::math::{Mat4, Vec3, Vec4, Vec2};
 use bracket_color::prelude::HSV;
-use bracket_color::rgb::RGB;
 use rayon::iter::IntoParallelIterator;
 use rayon::{
     prelude::{IndexedParallelIterator, ParallelIterator},
@@ -7,24 +7,61 @@ use rayon::{
 };
 use std::io::Write;
 use std::ops::{Range, RangeBounds};
+use std::simd::f32x4;
 use std::str::FromStr;
-
-use crate::vec2::Vec2;
 
 const ASCII_MAP: &[u8] = b"`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 const MAX_INDEX: f32 = (ASCII_MAP.len() - 1) as f32;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Camera {
+    pub fov: f32,
+    pub z_near: f32,
+    pub z_far: f32,
+}
+
+#[derive(Debug, Clone)]
 pub struct Framebuffer {
     pixels: Box<[u8]>,
     width: usize,
+    aspect_ratio: f32,
+    pub camera: Camera,
+}
+
+impl Camera {
+    #[inline]
+    pub fn new(fov: f32, z_near: f32, z_far: f32) -> Self {
+        debug_assert!(z_near < z_far);
+        return Self { fov, z_near, z_far };
+    }
+
+    #[inline]
+    pub fn transform(self, aspect_ratio: f32) -> Mat4 {
+        let yy = f32::tan(self.fov / 2.0).recip();
+        let zm = self.z_far - self.z_near;
+        let zp = self.z_far + self.z_near;
+
+        return Mat4::from_array([
+            [yy / aspect_ratio, 0.0, 0.0, 0.0],
+            [0.0, yy, 0.0, 0.0],
+            [0.0, 0.0, -zp / zm, -(2.0 * self.z_far * self.z_near) / zm],
+            [0.0, 0.0, -1.0, 0.0],
+        ]);
+    }
 }
 
 impl Framebuffer {
     #[inline]
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(size: Option<[usize; 2]>, camera: Camera) -> Self {
+        let [width, height] = size.unwrap_or_else(|| command_prompt_size().unwrap_or_default());
+        let [prompt_width, prompt_height] = command_prompt_size().unwrap_or([width, height]);
+        let aspect_ratio = (prompt_width as f32) / (prompt_height as f32);
+
         return Self {
             pixels: vec![ASCII_MAP[0]; width * height].into_boxed_slice(),
             width,
+            camera,
+            aspect_ratio,
         };
     }
 
@@ -39,65 +76,39 @@ impl Framebuffer {
     }
 
     #[inline]
-    pub fn update<H: Into<HSV>, F: Fn(usize, usize) -> Option<H>>(
+    pub fn update<H: Into<HSV>, F: Fn(Vec3) -> Option<H>>(
         &mut self,
-        region_x: impl RangeBounds<usize>,
-        region_y: impl RangeBounds<usize>,
         f: F,
     ) where
         F: Send + Sync,
         H: Send + Sync,
     {
-        self.update_pixel_value(region_x, region_y, move |i, j| f(i, j).map(pixel_value))
+        self.update_pixel_value(move |x| f(x).map(pixel_value))
     }
 
     #[inline]
-    fn update_pixel_value<F: Fn(usize, usize) -> Option<u8>>(
+    fn update_pixel_value<F: Fn(Vec3) -> Option<u8>>(
         &mut self,
-        region_x: impl RangeBounds<usize>,
-        region_y: impl RangeBounds<usize>,
         f: F,
     ) where
         F: Send + Sync,
     {
+        let transform = self.camera.transform(self.aspect_ratio);
+        let start_offset = transform * Vec4::new(0.0, 0.0, 1.0, 1.0);
 
-        pub fn clamped_range<R: RangeBounds<usize>>(range: R, bounds: std::ops::RangeTo<usize>) -> std::ops::Range<usize> {
-            let len = bounds.end;
-
-            let start: std::ops::Bound<&usize> = range.start_bound();
-            let start = match start {
-                std::ops::Bound::Included(&start) => start,
-                std::ops::Bound::Excluded(start) => start + 1,
-                std::ops::Bound::Unbounded => 0,
-            };
-        
-            let end: std::ops::Bound<&usize> = range.end_bound();
-            let end = match end {
-                std::ops::Bound::Included(end) => end + 1,
-                std::ops::Bound::Excluded(&end) => end,
-                std::ops::Bound::Unbounded => len,
-            };
-        
-            std::ops::Range {
-                start: usize::min(start, len),
-                end: usize::min(end, len)
-            }
-        }
-
-        let Range { start: row_start, end: row_end } = clamped_range(region_x, ..self.pixels.len());
-        let Range { start: col_start, end: col_end } = clamped_range(region_y, ..self.width);
-        
         unsafe {
             self.pixels
-                .get_unchecked_mut(row_start..row_end)
-                .par_chunks_exact_mut(row_end - row_start)
+                .get_unchecked_mut(..)
+                .par_chunks_exact_mut(self.width)
                 .enumerate()
                 .for_each(|(i, row)| {
-                    row.get_unchecked_mut(col_start..col_end)
+                    row.get_unchecked_mut(..)
                         .into_par_iter()
                         .enumerate()
                         .for_each(|(j, x)| {
-                            if let Some(color) = f(i + row_start, j + col_start) {
+                            let position = Vec4::new(j as f32, i as f32, 1.0, 1.0);
+                            let position = transform * (position + start_offset);
+                            if let Some(color) = f(position.into()) {
                                 *x = color
                             }
                         })
@@ -106,15 +117,19 @@ impl Framebuffer {
     }
 
     #[inline]
-    pub fn draw_circle (&mut self, pos: Vec2, radius: f32, color: impl Into<HSV>) {
+    pub fn draw_sphere(&mut self, pos: Position, radius: f32, color: impl Into<HSV>) {
+        let pos = pos.to_absolute(self);
         let value = pixel_value(color);
+
         self.update_pixel_value(
-            f32::round(pos.x() - radius) as usize..=f32::round(pos.x() + radius) as usize,
-            f32::round(pos.y() - radius) as usize..=f32::round(pos.y() + radius) as usize,
-            |x, y| {
-                if Vec2::new(x as f32, y as f32).distance(pos) <= radius { return Some(value) }
-                return None
-            }
+            // f32::round(pos.x() - radius) as usize..=f32::round(pos.x() + radius) as usize,
+            // f32::round(pos.y() - radius) as usize..=f32::round(pos.y() + radius) as usize,
+            |x| {
+                if pos.distance(x) <= radius {
+                    return Some(value);
+                }
+                return None;
+            },
         )
     }
 
@@ -143,11 +158,49 @@ impl Framebuffer {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Position {
+    Absolute (Vec3),
+    Relative (Vec3)
+}
+
+impl Position {
+    #[inline]
+    pub fn to_absolute (self, buffer: &Framebuffer) -> Vec3 {
+        return match self {
+            Self::Absolute(x) => x,
+            Self::Relative(x) => {
+                const OFFSET: Vec3 = Vec3::splat(1.0);
+                let limits = Vec3::new(buffer.width as f32, buffer.height() as f32, 1.0);
+                return ((x + OFFSET) / 2.0).wide_mul(limits)
+            }
+        }
+    }
+
+    #[inline]
+    pub fn to_relative (self, buffer: &Framebuffer) -> Vec3 {
+        return match self {
+            Self::Relative(x) => x,
+            Self::Absolute(x) => {
+                const OFFSET: Vec3 = Vec3::splat(1.0);
+                let limits = Vec3::new(buffer.width as f32, buffer.height() as f32, 1.0);
+                return 2.0 * x.wide_div(limits) - OFFSET
+            }
+        }
+    }
+}
+
+impl Default for Camera {
+    #[inline]
+    fn default() -> Self {
+        Self::new(f32::to_radians(60.0), 0.01, 1000.0)
+    }
+}
+
 impl Default for Framebuffer {
     #[inline]
     fn default() -> Self {
-        let [width, height] = command_prompt_size().unwrap_or_default();
-        return Self::new(width, height);
+        Self::new(Default::default(), Default::default())
     }
 }
 
