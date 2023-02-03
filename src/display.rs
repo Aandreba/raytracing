@@ -43,7 +43,7 @@ impl Camera {
         return Mat4::from_array([
             [yy / aspect_ratio, 0.0, 0.0, 0.0],
             [0.0, yy, 0.0, 0.0],
-            [0.0, 0.0, -zp / zm, -(2.0 * self.z_far * self.z_near) / zm],
+            [0.0, 0.0, -zp / zm, -2.0 * self.z_far * self.z_near / zm],
             [0.0, 0.0, -1.0, 0.0],
         ]);
     }
@@ -97,6 +97,7 @@ impl Framebuffer {
     {
         let transform = self.camera.transform(self.aspect_ratio);
         let t = &init(transform);
+        let size = Vec4::new(self.width as f32, self.height() as f32, 1.0, 1.0);
 
         unsafe {
             self.pixels
@@ -108,7 +109,7 @@ impl Framebuffer {
                         .into_iter()
                         .enumerate()
                         .for_each(|(j, x)| {
-                            let position = transform * Vec4::new(j as f32, i as f32, 1.0, 1.0);
+                            let position = transform * (2. * Vec4::new(j as f32, i as f32, 1.0, 1.0).wide_div(size) - Vec4::splat(1.0));
                             if let Some(color) = f(position.into(), t) {
                                 *x = color
                             }

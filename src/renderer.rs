@@ -23,7 +23,7 @@ impl<'a> Renderer<'a> {
             self.frame.update(core::convert::identity, |pos, _| {
                 let mut prev_info = ReflectInfo {
                     color: Vec3::splat(1.0),
-                    ray: Ray::new(Vec3::ZERO, Vec3::from_vec2(Vec2::from(pos).unit(), 1.0)),
+                    ray: Ray::new(Vec3::ZERO, pos),
                 };
 
                 for i in 0..depth {
