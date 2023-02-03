@@ -147,6 +147,26 @@ impl Vec4 {
     }
 
     #[inline]
+    pub fn set_x (&mut self, v: f32) {
+        self.0[0] = v
+    }
+
+    #[inline]
+    pub fn set_y (&mut self, v: f32) {
+        self.0[1] = v
+    }
+
+    #[inline]
+    pub fn set_z (&mut self, v: f32) {
+        self.0[2] = v
+    }
+
+    #[inline]
+    pub fn set_w (&mut self, v: f32) {
+        self.0[3] = v
+    }
+
+    #[inline]
     pub fn as_array(&self) -> &[f32; 4] {
         self.0.as_array()
     }

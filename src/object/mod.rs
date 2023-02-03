@@ -1,14 +1,37 @@
+use std::{sync::Arc};
 use crate::math::Vec3;
 pub mod sphere;
 
-pub trait Object {
-    fn is_hit_by(&self, ray: Ray) -> Option<HitRecord>;
+pub trait Object: Send + Sync {
+    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo>;
+}
+
+impl<T: ?Sized + Object> Object for &T {
+    #[inline]
+    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
+        T::is_hit_by(*self, ray)
+    }
+}
+
+impl<T: ?Sized + Object> Object for Box<T> {
+    #[inline]
+    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
+        T::is_hit_by(self, ray)
+    }
+}
+
+impl<T: ?Sized + Object> Object for Arc<T> {
+    #[inline]
+    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
+        T::is_hit_by(self, ray)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
-pub struct HitRecord {
-    pub time: f32
+pub struct HitInfo {
+    pub time: f32,
+    pub position: Vec3,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -29,14 +52,17 @@ impl Ray {
     }
 
     #[inline]
-    pub fn hits<T: Object>(self, target: &T) -> Option<HitRecord> {
+    pub fn hits<T: Object>(self, target: &T) -> Option<HitInfo> {
         T::is_hit_by(target, self)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{object::{sphere::Sphere, Ray, Object}, math::Vec3};
+    use crate::{
+        math::Vec3,
+        object::{sphere::Sphere, Object, Ray},
+    };
 
     #[test]
     fn test_sphere_hit() {

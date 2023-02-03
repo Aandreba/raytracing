@@ -1,6 +1,20 @@
-#![feature(portable_simd, slice_range, ptr_metadata, exit_status_error)]
+#![feature(
+    portable_simd,
+    slice_range,
+    ptr_metadata,
+    duration_consts_float,
+    exit_status_error
+)]
+use std::{
+    cell::UnsafeCell,
+    time::{Duration, Instant},
+};
+use crate::{
+    display::{Camera, Framebuffer, Position},
+    math::Vec3,
+    renderer::Renderer, object::sphere::Sphere, element::Element,
+};
 use bracket_color::rgb::RGB;
-use crate::{display::{Framebuffer, command_prompt_size, Position}, math::{Vec2, Vec3}};
 
 macro_rules! flat_mod {
     ($($i:ident),+) => {
@@ -11,18 +25,45 @@ macro_rules! flat_mod {
     };
 }
 
-pub mod math;
-pub mod object;
 pub mod display;
 pub mod element;
+pub mod math;
+pub mod object;
 pub mod renderer;
 
 fn main() -> anyhow::Result<()> {
-    println!("Current size: {:?}", command_prompt_size()?);
+    const BUDGET: Duration = Duration::from_secs_f64(1.0 / 24.0);
 
-    let mut frame = Framebuffer::default();
-    frame.draw_sphere(Position::Relative(Vec3::new(0.5, 0.5, 2.0)), 3.0, RGB::from_u8(255, 0, 0));
-    frame.display()?;
+    let frame = Framebuffer::new(None, Camera::default()); // [120, 50]
+    let sphere = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 5.0);
+    let mut renderer = Renderer::new(frame, vec![Element::new_unzise(&sphere, RGB::from_f32(1.0, 0.0, 0.0))]);
 
-    return Ok(())
+    loop {
+        let start = Instant::now();
+        //position.set_x(f32::clamp(position.x() + BUDGET.as_secs_f32(), -1.0, 1.0));
+        renderer.render(1)?;
+        break;
+
+        if let Some(delta) = BUDGET.checked_sub(start.elapsed()) {
+            std::thread::sleep(delta)
+        }
+    }
+
+    Ok(())
+}
+
+#[allow(unused)]
+#[inline]
+fn wait_until_press() -> std::io::Result<()> {
+    thread_local! {
+        static GB: UnsafeCell<String> = UnsafeCell::new(String::new());
+    }
+
+    GB.with(|gb| unsafe {
+        let gb = &mut *gb.get();
+        gb.clear();
+        std::io::stdin().read_line(gb)
+    })?;
+
+    return Ok(());
 }

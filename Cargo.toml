@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1.0.68"
 bracket-color = "0.8.7"
 cfg-if = "1.0.0"
+crossterm = "0.26.0"
 cstr = "0.2.11"
 rayon = "1.6.1"
 

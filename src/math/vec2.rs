@@ -77,13 +77,23 @@ impl Vec2 {
     }
 
     #[inline]
-    pub fn x (&self) -> f32 {
+    pub fn x (self) -> f32 {
         return self.0[0]
     }
 
     #[inline]
-    pub fn y (&self) -> f32 {
+    pub fn y (self) -> f32 {
         return self.0[1]
+    }
+
+    #[inline]
+    pub fn set_x (&mut self, v: f32) {
+        self.0[0] = v
+    }
+
+    #[inline]
+    pub fn set_y (&mut self, v: f32) {
+        self.0[1] = v
     }
 
     #[inline]

@@ -1,6 +1,6 @@
-use std::{hint::unreachable_unchecked, cmp::Ordering};
+use super::{HitInfo, Object, Ray};
 use crate::math::Vec3;
-use super::{Object, Ray, HitRecord};
+use std::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Sphere {
@@ -10,7 +10,7 @@ pub struct Sphere {
 
 impl Sphere {
     #[inline]
-    pub const fn new (center: Vec3, radius: f32) -> Self {
+    pub const fn new(center: Vec3, radius: f32) -> Self {
         return Self { radius, center };
     }
 }
@@ -18,20 +18,31 @@ impl Sphere {
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
 impl Object for Sphere {
     #[inline]
-    fn is_hit_by(&self, ray: Ray) -> Option<HitRecord> {
+    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
         let dist = ray.origin - self.center;
         let alpha = ray.direction * dist;
         let delta = (alpha * alpha) - (dist.sq_norm() - (self.radius * self.radius));
 
-        if delta.is_nan() || delta.is_infinite() || delta < 0.0 {
-            return None
-        }
+        let alpha = -alpha;
+        let beta = f32::sqrt(delta);
 
-        let time = f32::sqrt(delta) - alpha;
+        let time = f32::min(alpha + beta, alpha - beta);
         return match time.partial_cmp(&0.0) {
-            Some(Ordering::Greater | Ordering::Equal) => Some(HitRecord { time }),
-            None => unsafe { unreachable_unchecked() },
-            _ => None
-        }
+            Some(Ordering::Greater | Ordering::Equal) => Some(HitInfo {
+                position: ray.origin + ray.direction * time,
+                time,
+            }),
+            _ => None,
+        };
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_sphere_hit() {
+    let center = Vec3::new(0.0, 0.0, 0.0);
+    let sphere = Sphere::new(center, 1.0);
+    let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0));
+    let hit = sphere.is_hit_by(ray);
+    assert_eq!(hit.unwrap().time, 4.0);
 }

@@ -1,13 +1,13 @@
-use crate::math::{Mat4, Vec3, Vec4, Vec2};
+use crate::math::{Mat4, Vec3, Vec4};
 use bracket_color::prelude::HSV;
+use crossterm::style::Print;
+use crossterm::{terminal, QueueableCommand, cursor};
 use rayon::iter::IntoParallelIterator;
 use rayon::{
     prelude::{IndexedParallelIterator, ParallelIterator},
     slice::ParallelSliceMut,
 };
 use std::io::Write;
-use std::ops::{Range, RangeBounds};
-use std::simd::f32x4;
 use std::str::FromStr;
 
 const ASCII_MAP: &[u8] = b"`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
@@ -23,7 +23,7 @@ pub struct Camera {
 #[derive(Debug, Clone)]
 pub struct Framebuffer {
     pixels: Box<[u8]>,
-    width: usize,
+    width: u16,
     aspect_ratio: f32,
     pub camera: Camera,
 }
@@ -52,13 +52,13 @@ impl Camera {
 
 impl Framebuffer {
     #[inline]
-    pub fn new(size: Option<[usize; 2]>, camera: Camera) -> Self {
+    pub fn new(size: Option<[u16; 2]>, camera: Camera) -> Self {
         let [width, height] = size.unwrap_or_else(|| command_prompt_size().unwrap_or_default());
         let [prompt_width, prompt_height] = command_prompt_size().unwrap_or([width, height]);
         let aspect_ratio = (prompt_width as f32) / (prompt_height as f32);
 
         return Self {
-            pixels: vec![ASCII_MAP[0]; width * height].into_boxed_slice(),
+            pixels: vec![ASCII_MAP[0]; (width as usize) * (height as usize)].into_boxed_slice(),
             width,
             camera,
             aspect_ratio,
@@ -66,49 +66,52 @@ impl Framebuffer {
     }
 
     #[inline]
-    pub fn width(&self) -> usize {
+    pub fn width(&self) -> u16 {
         return self.width;
     }
 
     #[inline]
-    pub fn height(&self) -> usize {
-        return self.pixels.len() / self.width();
+    pub fn height(&self) -> u16 {
+        return (self.pixels.len() / (self.width() as usize)) as u16;
     }
 
     #[inline]
-    pub fn update<H: Into<HSV>, F: Fn(Vec3) -> Option<H>>(
+    pub fn update<T, I: FnOnce(Mat4) -> T, F: Fn(Vec3, &T) -> Option<HSV>>(
         &mut self,
+        init: I,
         f: F,
     ) where
+        T: Send + Sync,
         F: Send + Sync,
-        H: Send + Sync,
     {
-        self.update_pixel_value(move |x| f(x).map(pixel_value))
+        self.update_pixel_value(init, move |x, t| f(x, t).map(pixel_value))
     }
 
     #[inline]
-    fn update_pixel_value<F: Fn(Vec3) -> Option<u8>>(
+    fn update_pixel_value<T, I: FnOnce(Mat4) -> T, F: Fn(Vec3, &T) -> Option<u8>>(
         &mut self,
+        init: I,
         f: F,
     ) where
+        T: Send + Sync,
         F: Send + Sync,
     {
         let transform = self.camera.transform(self.aspect_ratio);
-        let start_offset = transform * Vec4::new(0.0, 0.0, 1.0, 1.0);
+        let t = init(transform);
 
         unsafe {
             self.pixels
                 .get_unchecked_mut(..)
-                .par_chunks_exact_mut(self.width)
+                .par_chunks_exact_mut(self.width as usize)
                 .enumerate()
                 .for_each(|(i, row)| {
+                    let t = &t;
                     row.get_unchecked_mut(..)
-                        .into_par_iter()
+                        .into_iter()
                         .enumerate()
                         .for_each(|(j, x)| {
-                            let position = Vec4::new(j as f32, i as f32, 1.0, 1.0);
-                            let position = transform * (position + start_offset);
-                            if let Some(color) = f(position.into()) {
+                            let position = transform * Vec4::new(j as f32, i as f32, 1.0, 1.0);
+                            if let Some(color) = f(position.into(), t) {
                                 *x = color
                             }
                         })
@@ -122,9 +125,10 @@ impl Framebuffer {
         let value = pixel_value(color);
 
         self.update_pixel_value(
+            |mat| Vec3::from(mat * Vec4::from_vec3(pos, 1.0)),
             // f32::round(pos.x() - radius) as usize..=f32::round(pos.x() + radius) as usize,
             // f32::round(pos.y() - radius) as usize..=f32::round(pos.y() + radius) as usize,
-            |x| {
+            |x, pos| {
                 if pos.distance(x) <= radius {
                     return Some(value);
                 }
@@ -134,8 +138,8 @@ impl Framebuffer {
     }
 
     #[inline]
-    pub fn set_pixel(&mut self, x: usize, y: usize, color: impl Into<HSV>) {
-        self.pixels[x * self.width + y] = pixel_value(color)
+    pub fn set_pixel(&mut self, x: u16, y: u16, color: impl Into<HSV>) {
+        self.pixels[(x as usize) * (self.width as usize) + (y as usize)] = pixel_value(color)
     }
 
     #[inline]
@@ -145,15 +149,19 @@ impl Framebuffer {
 
     #[inline]
     pub fn display(&self) -> anyhow::Result<()> {
-        // Clear command prompt
-        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-
         let mut stdout = std::io::stdout().lock();
-        for row in self.pixels.chunks(self.width) {
-            stdout.write_all(row)?;
-            stdout.write(b"\n")?;
+
+        stdout.queue(terminal::Clear(terminal::ClearType::Purge))?;
+        stdout.queue(terminal::SetSize(self.width(), self.height()))?;
+
+        for (row, i) in self.pixels.chunks(self.width as usize).zip(0..) {
+            let row = unsafe { core::str::from_utf8_unchecked(row) };
+            stdout
+                .queue(cursor::MoveToRow(i))?
+                .queue(Print(row))?;
         }
 
+        stdout.flush()?;
         return Ok(());
     }
 }
@@ -170,7 +178,7 @@ impl Position {
         return match self {
             Self::Absolute(x) => x,
             Self::Relative(x) => {
-                const OFFSET: Vec3 = Vec3::splat(1.0);
+                const OFFSET: Vec3 = Vec3::new(1.0, 1.0, 0.0);
                 let limits = Vec3::new(buffer.width as f32, buffer.height() as f32, 1.0);
                 return ((x + OFFSET) / 2.0).wide_mul(limits)
             }
@@ -182,7 +190,7 @@ impl Position {
         return match self {
             Self::Relative(x) => x,
             Self::Absolute(x) => {
-                const OFFSET: Vec3 = Vec3::splat(1.0);
+                const OFFSET: Vec3 = Vec3::new(1.0, 1.0, 0.0);
                 let limits = Vec3::new(buffer.width as f32, buffer.height() as f32, 1.0);
                 return 2.0 * x.wide_div(limits) - OFFSET
             }
@@ -210,16 +218,16 @@ pub fn pixel_value(color: impl Into<HSV>) -> u8 {
 }
 
 #[inline]
-pub fn command_prompt_size() -> anyhow::Result<[usize; 2]> {
+pub fn command_prompt_size() -> anyhow::Result<[u16; 2]> {
     cfg_if::cfg_if! {
         if #[cfg(windows)] {
             let width: std::process::Output = powershell_script::run("$Host.UI.RawUI.WindowSize.Width")?.into_inner();
             debug_assert!(width.status.success());
-            let width = usize::from_str(std::str::from_utf8(&width.stdout)?.trim())?;
+            let width = u16::from_str(std::str::from_utf8(&width.stdout)?.trim())?;
 
             let height: std::process::Output = powershell_script::run("$Host.UI.RawUI.WindowSize.Height")?.into_inner();
             debug_assert!(height.status.success());
-            let height = usize::from_str(std::str::from_utf8(&height.stdout)?.trim())?;
+            let height = u16::from_str(std::str::from_utf8(&height.stdout)?.trim())?;
 
             return Ok([width, height])
         } else {
