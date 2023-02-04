@@ -2,71 +2,62 @@ flat_mod! { vec2, vec3, vec4 }
 flat_mod! { mat4 }
 flat_mod! { euler, quat }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Rotation {
-    Euler (EulerAngles),
-    Quat (Quaternion)
-}
-
+/// Describes a tranformation in 3D-space
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Transform {
     pub position: Vec3,
+    pub rotation: Versor,
     pub scale: Vec3,
-    pub rotation: Quaternion,
 }
 
 impl Transform {
     #[inline]
-    pub fn translate (&mut self, offset: Vec3) {
+    pub fn new(position: Vec3, rotation: Versor, scale: Vec3) -> Self {
+        return Self {
+            position,
+            rotation,
+            scale,
+        };
+    }
+
+    #[inline]
+    pub fn translate(&mut self, offset: Vec3) {
         self.position += offset
+    }
+
+    #[inline]
+    pub fn rotate(&mut self, rot: Versor) {
+        self.rotation *= rot
+    }
+
+    #[inline]
+    pub fn scale(&mut self, scale: Vec3) {
+        self.scale = self.scale.wide_mul(scale)
     }
 }
 
 impl Transform {
     #[inline]
-    pub fn apply (self, v: Vec3) -> Vec3 {
-        unsafe {
-            self.position + self.rotation.apply_unchecked(v).wide_mul(self.scale)
-        }
+    pub fn apply(self, v: Vec3) -> Vec3 {
+        self.position + self.rotation.apply(v).wide_mul(self.scale)
     }
 }
 
 impl Default for Transform {
     #[inline]
     fn default() -> Self {
-        Self {
-            position: Vec3::ZERO,
-            scale: Vec3::splat(1.),
-            rotation: Quaternion::new(1., 0., 0., 0.)
-        }
-    }
-}
-
-impl Rotation {
-    #[inline]
-    pub fn to_euler (self) -> Quaternion {
-        todo!()
-    }
-
-    #[inline]
-    pub fn to_quaternion (self) -> Quaternion {
-        match self {
-            Self::Quat(q) => q,
-            Self::Euler(e) => Quaternion::from_euler(e)
-        }
-    }
-}
-
-impl Default for Rotation {
-    #[inline]
-    fn default() -> Self {
-        Self::Quat(Quaternion::new(1., 0., 0., 0.))
+        Self::new(Default::default(), Default::default(), Vec3::splat(1.))
     }
 }
 
 #[cfg(test)]
 #[test]
-fn test () {
-    let t = Transform::default();
+fn test() {
+    let t = Transform::new(
+        Vec3::new(1., 1., 0.),
+        EulerAngles::from_angles(180., 0., 0.).,
+        1.,
+    );
+
     let v = t.apply(Vec3::new(1., 2., 3.));
 }

@@ -1,12 +1,12 @@
 use super::{Vec3, Vec4, EulerAngles};
 use std::{
     fmt::Debug,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, Div, Mul, Sub, AddAssign, SubAssign, MulAssign, DivAssign},
     simd::{f32x4, simd_swizzle, Which},
 };
 
 /// Quaternion that is known to have a norm of one
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq)]
 #[repr(transparent)]
 pub struct Versor(Quaternion);
 
@@ -129,6 +129,11 @@ impl Versor {
     }
 
     #[inline]
+    pub fn from_euler (euler: EulerAngles) -> Self {
+        Self(Quaternion::from_euler(euler))
+    }
+
+    #[inline]
     pub const fn into_inner (self) -> Quaternion {
         self.0
     }
@@ -136,13 +141,13 @@ impl Versor {
 
 impl Versor {
     #[inline]
-    pub fn conjugate(self) -> Quaternion {
-        return Self(self.0.wide_mul(Vec4::from_array([1., -1., -1., -1.])));
+    pub fn conjugate(self) -> Versor {
+        return Self(Quaternion(self.0.0.wide_mul(Vec4::from_array([1., -1., -1., -1.]))));
     }
 
     #[inline]
-    pub fn inverse(self) -> Quaternion {
-        return self.conjugate() / self.sq_norm();
+    pub fn inverse(self) -> Versor {
+        return self.conjugate()
     }
 }
 
@@ -169,12 +174,26 @@ impl Add for Quaternion {
     }
 }
 
+impl AddAssign for Quaternion {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0
+    }
+}
+
 impl Sub for Quaternion {
     type Output = Quaternion;
 
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
+    }
+}
+
+impl SubAssign for Quaternion {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 -= rhs.0
     }
 }
 
@@ -205,12 +224,26 @@ impl Mul for Quaternion {
     }
 }
 
+impl MulAssign for Quaternion {
+    #[inline]
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs
+    }
+}
+
 impl Mul<f32> for Quaternion {
     type Output = Quaternion;
 
     #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
-        Quaternion(self.0.wide_mul(Vec4::splat(rhs)))
+        Quaternion(self.0 * rhs)
+    }
+}
+
+impl MulAssign<f32> for Quaternion {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f32) {
+        self.0 *= rhs
     }
 }
 
@@ -228,7 +261,14 @@ impl Div<f32> for Quaternion {
 
     #[inline]
     fn div(self, rhs: f32) -> Self::Output {
-        Quaternion(self.0.wide_div(Vec4::splat(rhs)))
+        Quaternion(self.0 / rhs)
+    }
+}
+
+impl DivAssign<f32> for Quaternion {
+    #[inline]
+    fn div_assign(&mut self, rhs: f32) {
+        self.0 /= rhs
     }
 }
 
@@ -295,6 +335,58 @@ impl Sub<Versor> for Quaternion {
     }
 }
 
+impl Mul for Versor {
+    type Output = Versor;
+
+    #[inline]
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl MulAssign for Versor {
+    #[inline]
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0 *= rhs.0
+    }
+}
+
+impl Mul<Quaternion> for Versor {
+    type Output = Quaternion;
+
+    #[inline]
+    fn mul(self, rhs: Quaternion) -> Self::Output {
+        self.0 * rhs
+    }
+}
+
+impl Mul<Versor> for Quaternion {
+    type Output = Quaternion;
+
+    #[inline]
+    fn mul(self, rhs: Versor) -> Self::Output {
+        self * rhs.0
+    }
+}
+
+impl Mul<f32> for Versor {
+    type Output = Quaternion;
+
+    #[inline]
+    fn mul(self, rhs: f32) -> Self::Output {
+        self.0 * rhs
+    }
+}
+
+impl Mul<Versor> for f32 {
+    type Output = Quaternion;
+
+    #[inline]
+    fn mul(self, rhs: Versor) -> Self::Output {
+        self * rhs.0
+    }
+}
+
 impl Debug for Quaternion {
     #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -309,16 +401,44 @@ impl Debug for Quaternion {
     }
 }
 
+impl Debug for Versor {
+    #[inline]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+impl Default for Versor {
+    #[inline]
+    fn default() -> Self {
+        Versor(Quaternion::new(1., 0., 0., 0.))
+    }
+}
+
 impl From<EulerAngles> for Quaternion {
     #[inline]
     fn from(value: EulerAngles) -> Self {
-        todo!()
+        Quaternion::from_euler(value)
+    }
+}
+
+impl From<EulerAngles> for Versor {
+    #[inline]
+    fn from(value: EulerAngles) -> Self {
+        Versor::from_euler(value)
     }
 }
 
 impl From<Quaternion> for Versor {
     #[inline]
     fn from(value: Quaternion) -> Self {
-        todo!()
+        Versor::from_quaternion(value)
+    }
+}
+
+impl From<Versor> for Quaternion {
+    #[inline]
+    fn from(value: Versor) -> Self {
+        value.into_inner()
     }
 }
