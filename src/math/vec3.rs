@@ -31,6 +31,11 @@ impl Vec3 {
     }
 
     #[inline]
+    pub const fn from_array ([x, y, z]: [f32; 3]) -> Self {
+        Self::new(x, y, z)
+    }
+
+    #[inline]
     pub fn from_simd (v: f32x4) -> Self {
         unsafe {
             cfg_if::cfg_if! {
@@ -76,7 +81,6 @@ impl Vec3 {
     pub const fn into_inner(self) -> f32x4 {
         self.0
     }
-
 
     #[inline]
     pub fn wide_mul(self, rhs: Self) -> Self {
@@ -189,17 +193,17 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn x(&self) -> f32 {
+    pub fn x(self) -> f32 {
         return self.0[0];
     }
 
     #[inline]
-    pub fn y(&self) -> f32 {
+    pub fn y(self) -> f32 {
         return self.0[1];
     }
 
     #[inline]
-    pub fn z(&self) -> f32 {
+    pub fn z(self) -> f32 {
         return self.0[2];
     }
 
@@ -224,7 +228,7 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn into_array(self) -> [f32; 3] {
+    pub fn to_array(self) -> [f32; 3] {
         unsafe { *(self.0.as_array() as *const [f32; 4] as *const [f32; 3]) }
     }
 }

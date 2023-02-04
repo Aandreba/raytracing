@@ -137,22 +137,22 @@ impl Vec4 {
     }
 
     #[inline]
-    pub fn x(&self) -> f32 {
+    pub fn x(self) -> f32 {
         return self.0[0];
     }
 
     #[inline]
-    pub fn y(&self) -> f32 {
+    pub fn y(self) -> f32 {
         return self.0[1];
     }
 
     #[inline]
-    pub fn z(&self) -> f32 {
+    pub fn z(self) -> f32 {
         return self.0[2];
     }
 
     #[inline]
-    pub fn w(&self) -> f32 {
+    pub fn w(self) -> f32 {
         return self.0[3];
     }
 
