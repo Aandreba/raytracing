@@ -48,7 +48,10 @@ impl<'a> Renderer<'a> {
                     break;
                 }
 
-                Some(Rgb(prev_info.color.to_array()))
+                let color = Vec3::to_inner(255. * prev_info.color).cast::<u8>();
+                unsafe {
+                    Some(Rgb(*(color.as_array() as *const [u8; 4] as *const [u8; 3])))
+                }
             });
         }
 

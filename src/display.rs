@@ -14,7 +14,7 @@ pub struct Camera {
 
 #[derive(Debug)]
 pub struct Framebuffer {
-    pixels: ImageBuffer<Rgb<f32>, Box<[f32]>>,
+    pixels: ImageBuffer<Rgb<u8>, Box<[u8]>>,
     aspect_ratio: f32,
     pub camera: Camera,
 }
@@ -51,7 +51,7 @@ impl Framebuffer {
                 ImageBuffer::from_raw(
                     width,
                     height,
-                    vec![0.0; 3 * (width as usize) * (height as usize)].into_boxed_slice(),
+                    vec![0; 3 * (width as usize) * (height as usize)].into_boxed_slice(),
                 )
                 .unwrap_unchecked()
             },
@@ -71,7 +71,7 @@ impl Framebuffer {
     }
 
     #[inline]
-    pub fn update<T, I: FnOnce(Mat4) -> T, F: Fn(Vec3, &T) -> Option<Rgb<f32>>>(
+    pub fn update<T, I: FnOnce(Mat4) -> T, F: Fn(Vec3, &T) -> Option<Rgb<u8>>>(
         &mut self,
         init: I,
         f: F,
@@ -86,7 +86,7 @@ impl Framebuffer {
         let size = Vec4::new(width as f32, self.height() as f32, 1.0, 1.0);
 
         unsafe {
-            let pixels = core::slice::from_raw_parts_mut(self.pixels.as_mut_ptr().cast::<Rgb<f32>>(), (self.width() as usize) * (self.height() as usize));
+            let pixels = core::slice::from_raw_parts_mut(self.pixels.as_mut_ptr().cast::<Rgb<u8>>(), (self.width() as usize) * (self.height() as usize));
             pixels
                 .par_chunks_exact_mut(width as usize)
                 .enumerate()
@@ -108,7 +108,7 @@ impl Framebuffer {
 
     #[inline]
     pub fn clear(&mut self) {
-        self.pixels.fill(0.0)
+        self.pixels.fill(0)
     }
 
     #[inline]
