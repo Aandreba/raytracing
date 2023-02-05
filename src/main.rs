@@ -33,11 +33,16 @@ pub mod renderer;
 
 fn main() -> anyhow::Result<()> {
     let frame = Framebuffer::new(100, 100, Camera::default())?; // [120, 50]
-    let mut renderer = Renderer::new(frame, Vec::new());
-    let _ = renderer.push(Element::new_unzise(
-        Sphere::new(Vec3::new(0.0, 0.0, -2.0), 1.0),
-        Vec3::new(1.0, 0.0, 0.0),
-    ));
+    let mut renderer = Renderer::new(frame, vec![
+        Element::new_unzise(
+            Sphere::new(Vec3::new(0.0, 0.0, -2.0), 0.5),
+            Vec3::new(1.0, 0.0, 0.0),
+        ),
+        // Element::new_unzise(
+        //     Sphere::new(Vec3::new(0.0, 0.0, -2.0), 0.5),
+        //     Vec3::new(0.0, 1.0, 0.0),
+        // )
+    ]);
 
     renderer.render(1)?;
     Ok(())
