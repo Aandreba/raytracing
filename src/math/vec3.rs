@@ -66,7 +66,7 @@ impl Vec3 {
     #[inline]
     pub fn from_vec2 (xy: Vec2, z: f32) -> Self {
         Self(simd_swizzle!(
-            xy.into_inner(),
+            xy.to_inner(),
             f32x2::from_array([z, 0.0]),
             [
                 Which::First(0),
@@ -78,7 +78,7 @@ impl Vec3 {
     }
 
     #[inline]
-    pub const fn into_inner(self) -> f32x4 {
+    pub const fn to_inner(self) -> f32x4 {
         self.0
     }
 
@@ -442,7 +442,7 @@ impl From<Vec2> for Vec3 {
     fn from(value: Vec2) -> Self {
         const MASK: f32x2 = f32x2::from_array([1.0; 2]);
         Self(simd_swizzle!(
-            value.into_inner(),
+            value.to_inner(),
             MASK,
             [
                 Which::First(0),
@@ -457,7 +457,7 @@ impl From<Vec2> for Vec3 {
 impl From<Vec4> for Vec3 {
     #[inline]
     fn from(value: Vec4) -> Self {
-        Self::from_simd(value.into_inner())
+        Self::from_simd(value.to_inner())
     }
 }
 

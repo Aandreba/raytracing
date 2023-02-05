@@ -1,4 +1,5 @@
-use bracket_color::rgb::RGB;
+use image::Rgb;
+
 use crate::{
     display::Framebuffer,
     element::{Element, ReflectInfo},
@@ -47,14 +48,7 @@ impl<'a> Renderer<'a> {
                     break;
                 }
 
-                Some(
-                    RGB::from_f32(
-                        prev_info.color.x(),
-                        prev_info.color.y(),
-                        prev_info.color.z(),
-                    )
-                    .to_hsv(),
-                )
+                Some(Rgb(prev_info.color.to_array()))
             });
         }
 

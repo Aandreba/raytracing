@@ -37,11 +37,11 @@ impl Quaternion {
 
     #[inline]
     pub fn from_euler (euler: EulerAngles) -> Self {
-        let euler = euler.into_vec();
+        let euler = euler.to_radians();
         let half = 0.5 * euler;
 
-        let sin = Vec3::from_array(half.to_array().map(f32::sin)).into_inner();
-        let cos = Vec3::from_array(half.to_array().map(f32::cos)).into_inner();
+        let sin = Vec3::from_array(half.to_array().map(f32::sin)).to_inner();
+        let cos = Vec3::from_array(half.to_array().map(f32::cos)).to_inner();
 
         let alpha_1 = simd_swizzle!(sin, cos, [Which::Second(0), Which::First(0), Which::Second(0), Which::Second(0)]);
         let alpha_2 = simd_swizzle!(sin, cos, [Which::Second(1), Which::Second(1), Which::First(1), Which::Second(1)]);
@@ -57,8 +57,8 @@ impl Quaternion {
     }
 
     #[inline]
-    pub const fn into_inner (self) -> f32x4 {
-        return self.0.into_inner()
+    pub const fn to_inner (self) -> f32x4 {
+        return self.0.to_inner()
     }
 
     #[inline]
@@ -134,7 +134,7 @@ impl Versor {
     }
 
     #[inline]
-    pub const fn into_inner (self) -> Quaternion {
+    pub const fn to_inner (self) -> Quaternion {
         self.0
     }
 }
@@ -156,12 +156,12 @@ impl Versor {
     // https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation#Quaternion-derived_rotation_matrix
     #[inline]
     pub fn apply(self, v: Vec3) -> Vec3 {
-        let p = Quaternion(Vec4::from_simd(simd_swizzle!(v.into_inner(), [3, 0, 1, 2])));
+        let p = Quaternion(Vec4::from_simd(simd_swizzle!(v.to_inner(), [3, 0, 1, 2])));
         let inv = self.inverse();
         let res = self * p * inv;
         
         debug_assert!(res.r() <= f32::EPSILON);
-        unsafe { Vec3::from_simd_unchecked(simd_swizzle!(res.into_inner(), [1, 2, 3, 0])) }
+        unsafe { Vec3::from_simd_unchecked(simd_swizzle!(res.to_inner(), [1, 2, 3, 0])) }
     }
 }
 
@@ -202,8 +202,8 @@ impl Mul for Quaternion {
 
     #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
-        let a = self.0.into_inner();
-        let b = rhs.0.into_inner();
+        let a = self.0.to_inner();
+        let b = rhs.0.to_inner();
 
         let a1123 = simd_swizzle!(a, [1, 1, 2, 3]);
         let a2231 = simd_swizzle!(a, [2, 2, 3, 1]);
@@ -439,6 +439,6 @@ impl From<Quaternion> for Versor {
 impl From<Versor> for Quaternion {
     #[inline]
     fn from(value: Versor) -> Self {
-        value.into_inner()
+        value.to_inner()
     }
 }

@@ -41,8 +41,8 @@ impl Vec4 {
 
     pub fn from_vec2(xy: Vec2, zw: Vec2) -> Self {
         return Self::from_simd(simd_swizzle!(
-            xy.into_inner(),
-            zw.into_inner(),
+            xy.to_inner(),
+            zw.to_inner(),
             [
                 Which::First(0),
                 Which::First(1),
@@ -54,13 +54,13 @@ impl Vec4 {
 
     #[inline]
     pub fn from_vec3(xyz: Vec3, w: f32) -> Self {
-        let mut this = xyz.into_inner();
+        let mut this = xyz.to_inner();
         this[2] = w;
         return Self::from_simd(this);
     }
 
     #[inline]
-    pub const fn into_inner(self) -> f32x4 {
+    pub const fn to_inner(self) -> f32x4 {
         self.0
     }
 }

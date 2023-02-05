@@ -1,24 +1,24 @@
-use super::{HitInfo, Object, Ray};
-use crate::math::Vec3;
+use super::{Object, Ray};
+use crate::math::{Vec3};
 use std::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Sphere {
-    pub radius: f32,
     pub center: Vec3,
+    pub radius: f32
 }
 
 impl Sphere {
     #[inline]
     pub const fn new(center: Vec3, radius: f32) -> Self {
-        return Self { radius, center };
+        return Self { center, radius }
     }
 }
 
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
 impl Object for Sphere {
     #[inline]
-    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
+    fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         let dist = ray.origin - self.center;
         let alpha = ray.direction * dist;
         let delta = (alpha * alpha) - (dist.sq_norm() - (self.radius * self.radius));
@@ -29,16 +29,13 @@ impl Object for Sphere {
         let time = match alpha.partial_cmp(&beta)? {
             Ordering::Equal => 0.0,
             Ordering::Greater => alpha - beta,
-            _ => match alpha + beta {
+            Ordering::Less => match alpha + beta {
                 x if x < 0.0 => return None,
-                x => x
+                x => x,
             },
         };
 
-        return Some(HitInfo {
-            position: ray.origin + ray.direction * time,
-            time,
-        })
+        return Some(time);
 
         // let time = f32::min(alpha + beta, alpha - beta);
         // return match time.partial_cmp(&0.0) {
@@ -60,5 +57,5 @@ fn test_sphere_hit() {
     let hit = sphere.is_hit_by(ray);
 
     println!("{hit:?}");
-    assert_eq!(hit.unwrap().time, 4.0);
+    assert_eq!(hit.unwrap(), 4.0);
 }

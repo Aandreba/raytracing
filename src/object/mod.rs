@@ -3,35 +3,28 @@ use crate::math::Vec3;
 pub mod sphere;
 
 pub trait Object: Send + Sync {
-    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo>;
+    fn is_hit_by(&self, ray: Ray) -> Option<f32>;
 }
 
 impl<T: ?Sized + Object> Object for &T {
     #[inline]
-    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
+    fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         T::is_hit_by(*self, ray)
     }
 }
 
 impl<T: ?Sized + Object> Object for Box<T> {
     #[inline]
-    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
+    fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         T::is_hit_by(self, ray)
     }
 }
 
 impl<T: ?Sized + Object> Object for Arc<T> {
     #[inline]
-    fn is_hit_by(&self, ray: Ray) -> Option<HitInfo> {
+    fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         T::is_hit_by(self, ray)
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[non_exhaustive]
-pub struct HitInfo {
-    pub time: f32,
-    pub position: Vec3,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -52,7 +45,7 @@ impl Ray {
     }
 
     #[inline]
-    pub fn hits<T: Object>(self, target: &T) -> Option<HitInfo> {
+    pub fn hits<T: Object>(self, target: &T) -> Option<f32> {
         T::is_hit_by(target, self)
     }
 }
@@ -70,6 +63,6 @@ mod tests {
         let sphere = Sphere::new(center, 1.0);
         let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0));
         let hit = sphere.is_hit_by(ray);
-        assert_eq!(hit.unwrap().time, 4.0);
+        assert_eq!(hit.unwrap(), 4.0);
     }
 }

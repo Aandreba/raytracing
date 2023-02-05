@@ -125,10 +125,10 @@ impl Mat4 {
             )
         }
 
-        let tmp0 = unpacklo(self.x.into_inner(), self.y.into_inner());
-        let tmp2 = unpacklo(self.z.into_inner(), self.w.into_inner());
-        let tmp1 = unpackhi(self.x.into_inner(), self.y.into_inner());
-        let tmp3 = unpackhi(self.z.into_inner(), self.w.into_inner());
+        let tmp0 = unpacklo(self.x.to_inner(), self.y.to_inner());
+        let tmp2 = unpacklo(self.z.to_inner(), self.w.to_inner());
+        let tmp1 = unpackhi(self.x.to_inner(), self.y.to_inner());
+        let tmp3 = unpackhi(self.z.to_inner(), self.w.to_inner());
 
         self.x = Vec4::from_simd(movelh(tmp0, tmp2));
         self.y = Vec4::from_simd(movehl(tmp2, tmp0));

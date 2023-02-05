@@ -7,29 +7,40 @@ pub struct EulerAngles (Vec3);
 
 impl EulerAngles {
     #[inline]
-    pub const fn new (roll: f32, pitch: f32, yaw: f32) -> Self {
+    pub const fn from_radians (roll: f32, pitch: f32, yaw: f32) -> Self {
         return Self(Vec3::new(roll, pitch, yaw))
     }
 
     #[inline]
-    pub fn from_angles (roll: f32, pitch: f32, yaw: f32) -> Self {
-        const WEIGHT: f32 = std::f32::consts::PI / 180.;
-        return Self::from_vec(WEIGHT * Vec3::new(roll, pitch, yaw))
+    pub fn from_degrees (roll: f32, pitch: f32, yaw: f32) -> Self {
+        return Self::from_degrees_vec(Vec3::new(roll, pitch, yaw))
     }
 
     #[inline]
-    pub const fn from_vec (vec: Vec3) -> Self {
+    pub const fn from_radians_vec (vec: Vec3) -> Self {
         return Self(vec)
     }
 
     #[inline]
-    pub const fn into_vec (self) -> Vec3 {
+    pub fn from_degrees_vec (vec: Vec3) -> Self {
+        const WEIGHT: f32 = std::f32::consts::PI / 180.;
+        return Self(vec * WEIGHT)
+    }
+
+    #[inline]
+    pub const fn to_radians (self) -> Vec3 {
         return self.0
+    }
+
+    #[inline]
+    pub fn to_degrees (self) -> Vec3 {
+        const WEIGHT: f32 = 180. / std::f32::consts::PI;
+        return self.0 * WEIGHT
     }
     
     #[inline]
-    pub const fn into_inner (self) -> f32x4 {
-        return self.0.into_inner()
+    pub const fn to_inner (self) -> f32x4 {
+        return self.0.to_inner()
     }
     
     #[inline]
@@ -57,8 +68,8 @@ impl PartialEq for EulerAngles {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         const WEIGHT: f32x4 = f32x4::from_array([std::f32::consts::TAU; 4]);
-        let this = self.0.into_inner() % WEIGHT;
-        let other = other.0.into_inner() % WEIGHT;
+        let this = self.0.to_inner() % WEIGHT;
+        let other = other.0.to_inner() % WEIGHT;
         return this == other
     }
 }

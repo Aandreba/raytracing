@@ -31,7 +31,7 @@ impl Vec2 {
     }
 
     #[inline]
-    pub const fn into_inner (self) -> f32x2 {
+    pub const fn to_inner (self) -> f32x2 {
         self.0
     }
 
@@ -261,14 +261,14 @@ impl Neg for Vec2 {
 impl From<Vec3> for Vec2 {
     #[inline]
     fn from(value: Vec3) -> Self {
-        Self::from_simd(simd_swizzle!(value.into_inner(), [0, 1]))
+        Self::from_simd(simd_swizzle!(value.to_inner(), [0, 1]))
     }
 }
 
 impl From<Vec4> for Vec2 {
     #[inline]
     fn from(value: Vec4) -> Self {
-        Self::from_simd(simd_swizzle!(value.into_inner(), [0, 1]))
+        Self::from_simd(simd_swizzle!(value.to_inner(), [0, 1]))
     }
 }
 

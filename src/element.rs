@@ -1,5 +1,4 @@
-use bracket_color::{rgb::RGB};
-use crate::{object::{Object, Ray, HitInfo}, math::Vec3};
+use crate::{object::{Object, Ray}, math::Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
@@ -15,8 +14,8 @@ pub struct Element<T> {
 
 impl<T: Object> Element<T> {
     #[inline]
-    pub fn new (object: T, color: RGB) -> Self {
-        return Self { object, color: Vec3::new(color.r, color.g, color.b) }
+    pub fn new (object: T, color: Vec3) -> Self {
+        return Self { object, color }
     }
 
     #[inline]
@@ -29,16 +28,16 @@ impl<T: Object> Element<T> {
 
     #[inline]
     pub fn interact (&self, mut prev: ReflectInfo) -> Option<ReflectInfo> {
-        let hit: HitInfo = prev.ray.hits(&self.object)?;
+        let _hit: f32 = prev.ray.hits(&self.object)?;
         prev.color = prev.color.wide_mul(self.color); // todo
-        prev.ray = Ray::new(hit.position, hit.position.cross(prev.ray.direction)); // todo
+        //prev.ray = Ray::new(hit.position, hit.position.cross(prev.ray.direction)); // todo
         return Some(prev)
     }
 }
 
 impl<'a> Element<Box<dyn 'a + Object>> {
     #[inline]
-    pub fn new_unzise (object: impl 'a + Object, color: RGB) -> Self {
+    pub fn new_unzise (object: impl 'a + Object, color: Vec3) -> Self {
         return Element::new(object, color).into_dyn()
     }
 }
