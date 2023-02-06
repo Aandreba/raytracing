@@ -1,5 +1,5 @@
 use super::{Object, Ray};
-use crate::math::{Vec3};
+use crate::math::{Vec3, UnitVec3};
 use std::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -18,8 +18,8 @@ impl Sphere {
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
 impl Object for Sphere {
     #[inline]
-    fn normal (&self, at: Vec3) -> Vec3 {
-        return (at - self.center) / self.radius
+    fn normal (&self, at: Vec3) -> UnitVec3 {
+        return (at - self.center).unit()
     }
 
     #[inline]
@@ -49,7 +49,7 @@ impl Object for Sphere {
 fn test_sphere_hit() {
     let center = Vec3::new(0.0, 0.0, 0.0);
     let sphere = Sphere::new(center, 1.0);
-    let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0));
+    let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0).unit());
     let hit = sphere.is_hit_by(ray);
 
     println!("{hit:?}");

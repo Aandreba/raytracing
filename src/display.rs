@@ -115,38 +115,6 @@ impl Framebuffer {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Position {
-    Absolute(Vec3),
-    Relative(Vec3),
-}
-
-impl Position {
-    #[inline]
-    pub fn to_absolute(self, buffer: &Framebuffer) -> Vec3 {
-        return match self {
-            Self::Absolute(x) => x,
-            Self::Relative(x) => {
-                const OFFSET: Vec3 = Vec3::new(1.0, 1.0, 0.0);
-                let limits = Vec3::new(buffer.width() as f32, buffer.height() as f32, 1.0);
-                return ((x + OFFSET) / 2.0).wide_mul(limits);
-            }
-        };
-    }
-
-    #[inline]
-    pub fn to_relative(self, buffer: &Framebuffer) -> Vec3 {
-        return match self {
-            Self::Relative(x) => x,
-            Self::Absolute(x) => {
-                const OFFSET: Vec3 = Vec3::new(1.0, 1.0, 0.0);
-                let limits = Vec3::new(buffer.width() as f32, buffer.height() as f32, 1.0);
-                return 2.0 * x.wide_div(limits) - OFFSET;
-            }
-        };
-    }
-}
-
 impl Default for Camera {
     #[inline]
     fn default() -> Self {

@@ -13,6 +13,10 @@ use std::{
 #[repr(transparent)]
 pub struct Mask3(mask32x4);
 
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[repr(transparent)]
+pub struct UnitVec3 (Vec3);
+
 #[derive(Clone, Copy, PartialEq, Default)]
 #[repr(transparent)]
 pub struct Vec3(f32x4);
@@ -173,6 +177,11 @@ impl Vec3 {
     }
 
     #[inline]
+    pub fn cross_unit (self, rhs: UnitVec3) -> Vec3 {
+        self.cross(rhs.0)
+    }
+
+    #[inline]
     pub fn sq_norm(self) -> f32 {
         self.dot(self)
     }
@@ -183,13 +192,18 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn unit(self) -> Vec3 {
-        self / self.norm()
+    pub fn unit(self) -> UnitVec3 {
+        UnitVec3(self / self.norm())
     }
 
     #[inline]
     pub fn distance(self, rhs: Vec3) -> f32 {
         (self - rhs).norm()
+    }
+
+    #[inline]
+    pub fn angle (self, rhs: Vec3) -> f32 {
+        f32::acos((self * rhs) / (self.norm() * rhs.norm()))
     }
 
     #[inline]
@@ -230,6 +244,119 @@ impl Vec3 {
     #[inline]
     pub fn to_array(self) -> [f32; 3] {
         unsafe { *(self.0.as_array() as *const [f32; 4] as *const [f32; 3]) }
+    }
+}
+
+impl UnitVec3 {
+    #[inline]
+    pub fn new (x: f32, y: f32, z: f32) -> Option<Self> {
+        Self::from_vec(Vec3::new(x, y, z))
+    }
+
+    #[inline]
+    pub unsafe fn new_unchecked (x: f32, y: f32, z: f32) -> Self {
+        Self::from_vec_unchecked(Vec3::new(x, y, z))
+    }
+
+    #[inline]
+    pub fn from_vec (vec: Vec3) -> Option<Self> {
+        if f32::abs(vec.sq_norm() - 1.) <= f32::EPSILON { return Some(Self(vec)) }
+        return None
+    }
+    
+    #[inline]
+    pub unsafe fn from_vec_unchecked (vec: Vec3) -> Self {
+        debug_assert!(f32::abs(vec.sq_norm() - 1.) <= f32::EPSILON);
+        Self(vec)
+    }
+
+    #[inline]
+    pub fn from_simd (v: f32x4) -> Option<Self> {
+        return Self::from_vec(Vec3::from_simd(v))
+    }
+
+    #[inline]
+    pub unsafe fn from_simd_unchecked (v: f32x4) -> Self {
+        return Self::from_vec_unchecked(Vec3::from_simd_unchecked(v))
+    }
+
+    #[inline]
+    pub const fn to_vec (self) -> Vec3 {
+        self.0
+    }
+
+    #[inline]
+    pub const fn to_inner (self) -> f32x4 {
+        self.0.to_inner()
+    }
+
+    // #[inline]
+    // pub fn wide_mul (self, rhs: Self) -> Self {
+    //     Self(self.0 * rhs.0)
+    // }
+    // #[inline]
+    // pub fn wide_div (self, rhs: Self) -> Self {
+    //     Self(self.0 / rhs.0)
+    // }
+
+    #[inline]
+    pub fn reduce_add (self) -> f32 {
+        return self.0.reduce_add()
+    }
+
+    #[inline]
+    pub fn dot_vec (self, rhs: Vec3) -> f32 {
+        self.0.dot(rhs)
+    }
+
+    #[inline]
+    pub fn dot (self, rhs: Self) -> f32 {
+        self.dot_vec(rhs.0)
+    }
+
+    #[inline]
+    pub fn cross_vec (self, rhs: Vec3) -> Vec3 {
+        self.0.cross(rhs)
+    }
+
+    #[inline]
+    pub fn cross (self, rhs: Self) -> Self {
+        Self(self.0.cross(rhs.0))
+    }
+
+    #[inline]
+    pub fn distance (self, rhs: Vec3) -> f32 {
+        (self - rhs).norm()
+    }
+
+    #[inline]
+    pub fn angle (self, rhs: Self) -> f32 {
+        f32::acos(self.dot(rhs))
+    }
+
+    #[inline]
+    pub fn x (self) -> f32 {
+        return self.0.x()
+    }
+
+    #[inline]
+    pub fn y (self) -> f32 {
+        return self.0.y()
+    }
+
+    #[inline]
+    pub fn z (self) -> f32 {
+        return self.0.z()
+    }
+
+    #[inline]
+    pub fn as_array (&self) -> &[f32; 3] {
+        self.0.as_array()
+    }
+    
+    #[inline]
+    pub fn to_array (self) -> [f32; 3] {
+        self.0.to_array()
     }
 }
 
@@ -380,6 +507,124 @@ impl DivAssign<f32> for Vec3 {
 
 impl Neg for Vec3 {
     type Output = Vec3;
+
+    #[inline]
+    fn neg(self) -> Self::Output {
+        Self(-self.0)
+    }
+}
+
+/* UNIT VEC */
+impl Add for UnitVec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self::Output {
+        self.0 + rhs.0
+    }
+}
+
+impl Add<Vec3> for UnitVec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn add(self, rhs: Vec3) -> Self::Output {
+        self.0 + rhs
+    }
+}
+
+impl Add<UnitVec3> for Vec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn add(self, rhs: UnitVec3) -> Self::Output {
+        self + rhs.0
+    }
+}
+
+impl Sub for UnitVec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.0 - rhs.0
+    }
+}
+
+impl Sub<Vec3> for UnitVec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn sub(self, rhs: Vec3) -> Self::Output {
+        self.0 - rhs
+    }
+}
+
+impl Sub<UnitVec3> for Vec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn sub(self, rhs: UnitVec3) -> Self::Output {
+        self - rhs.0
+    }
+}
+
+impl Mul for UnitVec3 {
+    type Output = f32;
+
+    #[inline]
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.dot(rhs)
+    }
+}
+
+impl Mul<Vec3> for UnitVec3 {
+    type Output = f32;
+
+    #[inline]
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        self.dot_vec(rhs)
+    }
+}
+
+impl Mul<f32> for UnitVec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn mul(self, rhs: f32) -> Self::Output {
+        self.0 * rhs
+    }
+}
+
+impl Mul<UnitVec3> for f32 {
+    type Output = Vec3;
+
+    #[inline]
+    fn mul(self, rhs: UnitVec3) -> Self::Output {
+        self * rhs.0
+    }
+}
+
+impl Div<f32> for UnitVec3 {
+    type Output = Vec3;
+
+    #[inline]
+    fn div(self, rhs: f32) -> Self::Output {
+        self.0 / rhs
+    }
+}
+
+impl Div<UnitVec3> for f32 {
+    type Output = Vec3;
+
+    #[inline]
+    fn div(self, rhs: UnitVec3) -> Self::Output {
+        self / rhs.0
+    }
+}
+
+impl Neg for UnitVec3 {
+    type Output = UnitVec3;
 
     #[inline]
     fn neg(self) -> Self::Output {

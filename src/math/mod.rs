@@ -55,7 +55,7 @@ impl Default for Transform {
 fn test() {
     let t = Transform::new(
         Vec3::new(1., 1., 0.),
-        EulerAngles::from_degrees(1., 2., 3.).to_versor(),
+        EulerAngles::from_radians(1., 2., 3.).to_versor(),
         Vec3::splat(0.5),
     );
 

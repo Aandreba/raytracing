@@ -8,7 +8,7 @@ pub struct EulerAngles (Vec3);
 impl EulerAngles {
     #[inline]
     pub const fn from_radians (roll: f32, pitch: f32, yaw: f32) -> Self {
-        return Self(Vec3::new(roll, pitch, yaw))
+        return Self::from_radians_vec(Vec3::new(roll, pitch, yaw))
     }
 
     #[inline]

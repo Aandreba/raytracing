@@ -5,12 +5,14 @@
     duration_consts_float,
     exit_status_error
 )]
+use light::PointLight;
+
 use crate::{
     display::{Camera, Framebuffer},
     element::Element,
     math::Vec3,
     object::sphere::Sphere,
-    renderer::Renderer
+    renderer::Renderer,
 };
 
 macro_rules! flat_mod {
@@ -24,22 +26,29 @@ macro_rules! flat_mod {
 
 pub mod display;
 pub mod element;
+pub mod light;
 pub mod math;
 pub mod object;
 pub mod renderer;
 
 fn main() -> anyhow::Result<()> {
     let frame = Framebuffer::new(100, 100, Camera::default())?; // [120, 50]
-    let mut renderer = Renderer::new(frame, [
-        Element::new_unzise(
-            Sphere::new(Vec3::new(0.0, 0.0, -2.0), 0.5),
-            Vec3::new(1.0, 0.0, 0.0),
-        ),
-        Element::new_unzise(
-            Sphere::new(Vec3::new(1.0, 0.0, -2.0), 0.5),
-            Vec3::new(0.0, 1.0, 0.0),
-        )
-    ]);
+    let mut renderer = Renderer::new(
+        frame,
+        [
+            Element::new_unzise(
+                Sphere::new(Vec3::new(0.0, 0.0, -2.0), 1.),
+                Vec3::new(1.0, 0.0, 0.0),
+            ),
+            Element::new_unzise(
+                Sphere::new(Vec3::new(1.0, 0.0, -2.0), 0.5),
+                Vec3::new(0.0, 1.0, 0.0),
+            ),
+        ],
+        [
+            PointLight::new_unsize(Vec3::ZERO, Vec3::new(1., 1., 1.), 0.5)
+        ],
+    );
 
     renderer.render(1)?;
     Ok(())

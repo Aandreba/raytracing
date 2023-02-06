@@ -1,17 +1,17 @@
-use std::{sync::Arc};
-use crate::math::Vec3;
+use crate::{math::{UnitVec3, Vec3}};
+use std::sync::Arc;
 pub mod sphere;
 
 pub type DynObject<'a> = Box<dyn 'a + Object>;
 
 pub trait Object: Send + Sync {
-    fn normal (&self, at: Vec3) -> Vec3;
+    fn normal(&self, at: Vec3) -> UnitVec3;
     fn is_hit_by(&self, ray: Ray) -> Option<f32>;
 }
 
 impl<T: ?Sized + Object> Object for &T {
     #[inline]
-    fn normal (&self, at: Vec3) -> Vec3 {
+    fn normal(&self, at: Vec3) -> UnitVec3 {
         T::normal(*self, at)
     }
 
@@ -23,7 +23,7 @@ impl<T: ?Sized + Object> Object for &T {
 
 impl<T: ?Sized + Object> Object for Box<T> {
     #[inline]
-    fn normal (&self, at: Vec3) -> Vec3 {
+    fn normal(&self, at: Vec3) -> UnitVec3 {
         T::normal(self, at)
     }
 
@@ -35,7 +35,7 @@ impl<T: ?Sized + Object> Object for Box<T> {
 
 impl<T: ?Sized + Object> Object for Arc<T> {
     #[inline]
-    fn normal (&self, at: Vec3) -> Vec3 {
+    fn normal(&self, at: Vec3) -> UnitVec3 {
         T::normal(self, at)
     }
 
@@ -48,35 +48,35 @@ impl<T: ?Sized + Object> Object for Arc<T> {
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Ray {
     pub origin: Vec3,
-    pub direction: Vec3, // unit vector
+    pub direction: UnitVec3,
 }
 
 impl Ray {
     #[inline]
-    pub fn new(origin: Vec3, direction: Vec3) -> Self {
-        unsafe { return Self::new_unchecked(origin, direction.unit()) }
-    }
-
-    #[inline]
-    pub const unsafe fn new_unchecked(origin: Vec3, direction: Vec3) -> Self {
+    pub const fn new(origin: Vec3, direction: UnitVec3) -> Self {
         return Self { origin, direction };
     }
 
     #[inline]
-    pub fn position_at (self, t: f32) -> Vec3 {
-        return self.origin + t * self.direction
+    pub fn position_at(self, t: f32) -> Vec3 {
+        return self.origin + t * self.direction;
     }
 
     #[inline]
     pub fn hits<T: Object>(self, target: &T) -> Option<f32> {
         T::is_hit_by(target, self)
     }
+
+    #[inline]
+    pub fn reflect(self, normal: UnitVec3) -> UnitVec3 {
+        Vec3::unit(self.direction - 2. * (self.direction * normal) * normal)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        math::Vec3,
+        math::{UnitVec3, Vec3},
         object::{sphere::Sphere, Object, Ray},
     };
 
@@ -84,7 +84,9 @@ mod tests {
     fn test_sphere_hit() {
         let center = Vec3::ZERO;
         let sphere = Sphere::new(center, 1.0);
-        let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), Vec3::new(0.0, 0.0, 1.0));
+        let ray = Ray::new(Vec3::new(0.0, 0.0, -5.0), unsafe {
+            UnitVec3::new_unchecked(0.0, 0.0, 1.0)
+        });
         let hit = sphere.is_hit_by(ray);
         assert_eq!(hit.unwrap(), 4.0);
     }

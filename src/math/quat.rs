@@ -119,7 +119,8 @@ impl Versor {
     }
 
     #[inline]
-    pub const unsafe fn new_unchecked (q: Quaternion) -> Self {
+    pub unsafe fn new_unchecked (q: Quaternion) -> Self {
+        debug_assert_eq!(q.sq_norm(), 1.);
         return Self(q)
     }
     
@@ -158,7 +159,7 @@ impl Versor {
     pub fn apply(self, v: Vec3) -> Vec3 {
         let p = Quaternion(Vec4::from_simd(simd_swizzle!(v.to_inner(), [3, 0, 1, 2])));
         let inv = self.inverse();
-        let res = self * p * inv;
+        let res = (self * p) * inv;
         
         debug_assert!(res.r() <= f32::EPSILON);
         unsafe { Vec3::from_simd_unchecked(simd_swizzle!(res.to_inner(), [1, 2, 3, 0])) }
