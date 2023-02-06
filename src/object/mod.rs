@@ -2,11 +2,19 @@ use std::{sync::Arc};
 use crate::math::Vec3;
 pub mod sphere;
 
+pub type DynObject<'a> = Box<dyn 'a + Object>;
+
 pub trait Object: Send + Sync {
+    fn normal (&self, at: Vec3) -> Vec3;
     fn is_hit_by(&self, ray: Ray) -> Option<f32>;
 }
 
 impl<T: ?Sized + Object> Object for &T {
+    #[inline]
+    fn normal (&self, at: Vec3) -> Vec3 {
+        T::normal(*self, at)
+    }
+
     #[inline]
     fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         T::is_hit_by(*self, ray)
@@ -15,12 +23,22 @@ impl<T: ?Sized + Object> Object for &T {
 
 impl<T: ?Sized + Object> Object for Box<T> {
     #[inline]
+    fn normal (&self, at: Vec3) -> Vec3 {
+        T::normal(self, at)
+    }
+
+    #[inline]
     fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         T::is_hit_by(self, ray)
     }
 }
 
 impl<T: ?Sized + Object> Object for Arc<T> {
+    #[inline]
+    fn normal (&self, at: Vec3) -> Vec3 {
+        T::normal(self, at)
+    }
+
     #[inline]
     fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         T::is_hit_by(self, ray)
@@ -42,6 +60,11 @@ impl Ray {
     #[inline]
     pub const unsafe fn new_unchecked(origin: Vec3, direction: Vec3) -> Self {
         return Self { origin, direction };
+    }
+
+    #[inline]
+    pub fn position_at (self, t: f32) -> Vec3 {
+        return self.origin + t * self.direction
     }
 
     #[inline]

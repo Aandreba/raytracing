@@ -12,9 +12,6 @@ use crate::{
     object::sphere::Sphere,
     renderer::Renderer
 };
-use std::{
-    cell::UnsafeCell,
-};
 
 macro_rules! flat_mod {
     ($($i:ident),+) => {
@@ -33,33 +30,17 @@ pub mod renderer;
 
 fn main() -> anyhow::Result<()> {
     let frame = Framebuffer::new(100, 100, Camera::default())?; // [120, 50]
-    let mut renderer = Renderer::new(frame, vec![
+    let mut renderer = Renderer::new(frame, [
         Element::new_unzise(
             Sphere::new(Vec3::new(0.0, 0.0, -2.0), 0.5),
             Vec3::new(1.0, 0.0, 0.0),
         ),
-        // Element::new_unzise(
-        //     Sphere::new(Vec3::new(0.0, 0.0, -2.0), 0.5),
-        //     Vec3::new(0.0, 1.0, 0.0),
-        // )
+        Element::new_unzise(
+            Sphere::new(Vec3::new(1.0, 0.0, -2.0), 0.5),
+            Vec3::new(0.0, 1.0, 0.0),
+        )
     ]);
 
     renderer.render(1)?;
     Ok(())
-}
-
-#[allow(unused)]
-#[inline]
-fn wait_until_press() -> std::io::Result<()> {
-    thread_local! {
-        static GB: UnsafeCell<String> = UnsafeCell::new(String::new());
-    }
-
-    GB.with(|gb| unsafe {
-        let gb = &mut *gb.get();
-        gb.clear();
-        std::io::stdin().read_line(gb)
-    })?;
-
-    return Ok(());
 }

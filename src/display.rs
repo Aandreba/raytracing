@@ -71,7 +71,7 @@ impl Framebuffer {
     }
 
     #[inline]
-    pub fn update<T, I: FnOnce(Mat4) -> T, F: Fn(Vec3, &T) -> Option<Rgb<u8>>>(
+    pub fn update<T, I: FnOnce(Mat4) -> T, F: Fn(Vec3, &T) -> Rgb<u8>>(
         &mut self,
         init: I,
         f: F,
@@ -98,9 +98,7 @@ impl Framebuffer {
                             let position = transform
                                 * (2. * Vec4::new(j as f32, i as f32, 1.0, 1.0).wide_div(size)
                                     - Vec4::splat(1.0));
-                            if let Some(color) = f(position.into(), t) {
-                                *x = color
-                            }
+                            *x = f(position.into(), t)
                         })
                 });
         }

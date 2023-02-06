@@ -18,6 +18,11 @@ impl Sphere {
 // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
 impl Object for Sphere {
     #[inline]
+    fn normal (&self, at: Vec3) -> Vec3 {
+        return (at - self.center) / self.radius
+    }
+
+    #[inline]
     fn is_hit_by(&self, ray: Ray) -> Option<f32> {
         let dist = ray.origin - self.center;
         let alpha = ray.direction * dist;
@@ -36,15 +41,6 @@ impl Object for Sphere {
         };
 
         return Some(time);
-
-        // let time = f32::min(alpha + beta, alpha - beta);
-        // return match time.partial_cmp(&0.0) {
-        //     Some(Ordering::Greater | Ordering::Equal) => Some(HitInfo {
-        //         position: ray.origin + ray.direction * time,
-        //         time,
-        //     }),
-        //     _ => None,
-        // };
     }
 }
 
