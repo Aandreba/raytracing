@@ -33,8 +33,6 @@ where
     where
         E: Send + Sync,
     {
-        // TODO FIX
-        // todo depth
         let limit = depth - 1;
         let elements: &[Element<DynObject>] = self.elements.borrow();
         let lights: &[DynLight] = self.lights.borrow();
@@ -65,10 +63,10 @@ where
                         }
                     }
                     
-                    prev_info.color = color.wide_mul(element.color);
+                    prev_info.color = color.wide_mul(element.material.reflectiveness); // todo
                     if i < limit {
                         let normal = element.object.normal(prev_info.ray.origin);
-                        prev_info.ray.direction = prev_info.ray.reflect(normal); // todo
+                        prev_info.ray.direction = prev_info.ray.reflect(normal);
                         prev_info.ray.origin = new_origin
                     }
                 }

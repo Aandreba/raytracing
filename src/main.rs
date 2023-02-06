@@ -5,7 +5,7 @@
     duration_consts_float,
     exit_status_error
 )]
-use light::PointLight;
+use light::{Point, Ambient};
 
 use crate::{
     display::{Camera, Framebuffer},
@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
         frame,
         [
             Element::new_unzise(
-                Sphere::new(Vec3::new(0.0, 0.0, -2.0), 1.),
+                Sphere::new(Vec3::new(1.0, -1.0, -1.0), 0.5),
                 Vec3::new(1.0, 0.0, 0.0),
             ),
             Element::new_unzise(
@@ -46,7 +46,8 @@ fn main() -> anyhow::Result<()> {
             ),
         ],
         [
-            PointLight::new_unsize(Vec3::ZERO, Vec3::new(1., 1., 1.), 0.5)
+            Point::new_unsize(Vec3::ZERO, Vec3::new(1., 1., 1.), 0.5),
+            Ambient::new_unsize(0.1 * Vec3::new(1., 1., 1.))
         ],
     );
 

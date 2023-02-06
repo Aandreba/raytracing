@@ -8,36 +8,41 @@ pub struct ReflectInfo {
 }
 
 pub struct Element<T> {
-    pub color: Vec3,
     pub object: T,
+    pub material: Material,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Material {
+    pub color: Vec3,
+    pub reflectiveness: Vec3
 }
 
 impl<T: Object> Element<T> {
     #[inline]
-    pub fn new (object: T, color: Vec3) -> Self {
-        return Self { object, color }
+    pub fn new (object: T, material: Material) -> Self {
+        return Self { object, material }
     }
 
     #[inline]
     pub fn into_dyn<'a> (self) -> Element<Box<dyn 'a + Object>> where T: 'a {
         return Element {
-            color: self.color,
+            material: self.material,
             object: Box::new(self.object)
         }
-    }
-
-    #[inline]
-    pub fn interact (&self, mut prev: ReflectInfo) -> Option<ReflectInfo> {
-        let _hit: f32 = prev.ray.hits(&self.object)?;
-        prev.color = prev.color.wide_mul(self.color); // todo
-        //prev.ray = Ray::new(hit.position, hit.position.cross(prev.ray.direction)); // todo
-        return Some(prev)
     }
 }
 
 impl<'a> Element<Box<dyn 'a + Object>> {
     #[inline]
-    pub fn new_unzise (object: impl 'a + Object, color: Vec3) -> Self {
-        return Element::new(object, color).into_dyn()
+    pub fn new_unzise (object: impl 'a + Object, material: Material) -> Self {
+        return Element::new(object, material).into_dyn()
+    }
+}
+
+impl Material {
+    #[inline]
+    pub const fn new (color: Vec3, reflectiveness: Vec3) -> Self {
+        Self { color, reflectiveness }
     }
 }
